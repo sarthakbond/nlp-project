@@ -48,6 +48,7 @@ streamlit run app.py
 
 ## Project Structure
 
+```text
 pdf-chat-assistant/
 │
 ├── app.py                  # Streamlit application
@@ -73,3 +74,4 @@ pdf-chat-assistant/
     ├── vector_store.py     # FAISS index creation and search
     ├── rag.py              # Document retrieval pipeline
     └── llm.py              # Gemini response generation
+```
