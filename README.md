@@ -17,6 +17,17 @@ Built using **Python**, **Streamlit**, **Sentence Transformers**, **FAISS**, and
 * **AI-Powered Response Generation** – Generates accurate, context-aware answers using **Google Gemini 2.5 Flash**.
 * **Interactive Web Application** – Built with **Streamlit** for an intuitive and responsive user experience.
 
+## Screenshots
+
+### Home Screen
+![Home](assets/home.png)
+
+### PDF Upload
+![Upload](assets/upload.png)
+
+### Q & A Demo
+![Demo](assets/demo.png)
+
 ## Installation & Setup
 
 ### 1. Clone the repository
