@@ -57,6 +57,47 @@ Generate your own Gemini API key from Google AI Studio and add it to the `.env` 
 streamlit run app.py
 ```
 
+## Architecture & Workflow
+
+```text
+ Upload PDF
+      │
+      ▼
+Extract Text
+      │
+      ▼
+Split Text into
+    Chunks
+      │
+      ▼
+Generate & Store
+  Embeddings
+      │
+      ▼
+  User Query
+      │
+      ▼
+Generate Query
+  Embedding
+      │
+      ▼
+FAISS Similarity
+    Search
+      │
+      ▼
+Retrieve Relevant
+    Chunks
+      │
+      ▼
+    Gemini
+(Retrieved Context +
+    User Query)
+      │
+      ▼
+Generate Grounded
+    Response
+```
+
 ## Project Structure
 
 ```text
