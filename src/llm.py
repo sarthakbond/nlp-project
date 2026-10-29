@@ -1,25 +1,92 @@
-import google.generativeai as genai
+import re
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 
 def load_model(api_key):
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-2.5-flash")
-    return model
+    """
+    Initializes the Gemini model if an API key is provided.
+    Returns None if api_key is missing or invalid.
+    """
+    if not api_key or not api_key.strip():
+        return None
+
+    try:
+        import google.generativeai as genai
+        genai.configure(api_key=api_key.strip())
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        return model
+    except Exception as e:
+        print(f"Warning: Failed to initialize Gemini model: {e}")
+        return None
+
+
+def extract_extractive_answer(question, context, top_sentences=2):
+    """
+    Topic #9: Extractive QA using TF-IDF sentence similarity.
+    Extracts the most relevant sentences from the retrieved context
+    without needing an external LLM / API key.
+    """
+    if not context or not context.strip():
+        return "No relevant context found in document."
+
+    # Split context into sentences
+    sentences = re.split(r"(?<=[.!?])\s+", context.strip())
+    sentences = [s.strip() for s in sentences if len(s.strip()) > 15]
+
+    if not sentences:
+        return context[:300] + "..."
+
+    try:
+        vec = TfidfVectorizer(stop_words="english")
+        tfidf_sentences = vec.fit_transform(sentences)
+        query_vec = vec.transform([question])
+        scores = cosine_similarity(query_vec, tfidf_sentences).flatten()
+
+        import numpy as np
+        top_idx = np.argsort(scores)[::-1][:top_sentences]
+        best_sentences = [sentences[i] for i in top_idx if scores[i] > 0]
+
+        if not best_sentences:
+            return sentences[0]
+
+        return " ".join(best_sentences)
+    except Exception:
+        return sentences[0]
 
 
 def generate_answer(model, question, context):
-    prompt = f"""
-You are a helpful assistant. Use ONLY the context below to answer the question.
-If the answer is not in the context, say: "Not found in document."
+    """
+    Generates answer using Gemini LLM if available,
+    otherwise falls back gracefully to classical Extractive QA.
+    """
+    if model is None:
+        extractive = extract_extractive_answer(question, context)
+        return (
+            f"**[Extractive QA Result - Topic #9 Classical Retrieval]:**\n\n"
+            f"> {extractive}\n\n"
+            f"*(Tip: Provide a `GEMINI_API_KEY` in the sidebar or `.env` file to generate a synthesized conversational response.)*"
+        )
 
-Context:
+    prompt = f"""
+You are an intelligent document QA assistant. Use ONLY the retrieved context below to answer the user's question accurately.
+If the answer cannot be determined from the context, state: "The requested information is not found in the provided document."
+
+Retrieved Context:
 {context}
 
 Question:
 {question}
 
-Answer in a clear and concise way:
+Provide a clear, accurate, and concise answer based strictly on the context above:
 """
-
-    response = model.generate_content(prompt)
-    return response.text
+    try:
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        # Fallback to extractive answer if API fails (e.g., quota or network issue)
+        fallback = extract_extractive_answer(question, context)
+        return (
+            f"**[LLM API Error: {e}]**\n\n"
+            f"**Fallback Extractive Answer:**\n\n> {fallback}"
+        )

@@ -1,9 +1,9 @@
-faiss-cpu
-google-generativeai
-numpy
-PyMuPDF
-python-dotenv
-sentence-transformers
+scikit-learn
 streamlit
-torch
-transformers
+pypdf
+PyMuPDF
+numpy
+python-dotenv
+google-generativeai
+sentence-transformers
+faiss-cpu
