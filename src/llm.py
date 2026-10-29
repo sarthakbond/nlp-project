@@ -3,19 +3,53 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 
+class GeminiWrapper:
+    """
+    Wrapper around Google Generative AI that supports modern Gemini models
+    with automatic fallback (gemini-3.8-flash -> gemini-2.0-flash -> gemini-1.5-flash).
+    """
+    def __init__(self, api_key):
+        self.api_key = api_key.strip()
+        import google.generativeai as genai
+        genai.configure(api_key=self.api_key)
+        self.candidate_models = [
+            "gemini-3.8-flash",
+            "gemini-2.0-flash",
+            "gemini-1.5-flash",
+            "gemini-1.5-pro",
+        ]
+
+    def generate_content(self, prompt):
+        import google.generativeai as genai
+        last_error = None
+
+        for model_name in self.candidate_models:
+            try:
+                model = genai.GenerativeModel(model_name)
+                response = model.generate_content(prompt)
+                return response
+            except Exception as e:
+                last_error = e
+                err_str = str(e).lower()
+                # If model is 404, deprecated, or unavailable, fallback to next model
+                if "404" in err_str or "not found" in err_str or "no longer available" in err_str:
+                    continue
+                else:
+                    raise e
+
+        raise last_error
+
+
 def load_model(api_key):
     """
-    Initializes the Gemini model if an API key is provided.
+    Initializes the Gemini model wrapper if an API key is provided.
     Returns None if api_key is missing or invalid.
     """
     if not api_key or not api_key.strip():
         return None
 
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=api_key.strip())
-        model = genai.GenerativeModel("gemini-2.5-flash")
-        return model
+        return GeminiWrapper(api_key)
     except Exception as e:
         print(f"Warning: Failed to initialize Gemini model: {e}")
         return None
