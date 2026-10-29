@@ -25,11 +25,11 @@ st.set_page_config(
     page_title="PDF Question Answering | Topic #9",
     page_icon="📄",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto"
 )
 
 # -----------------------------------------------------------------------------
-# Impeccable Light & Minimalist Styling
+# Impeccable Light & Minimalist Styling (Desktop + Mobile Responsive)
 # -----------------------------------------------------------------------------
 CUSTOM_CSS = """
 <style>
@@ -39,17 +39,19 @@ CUSTOM_CSS = """
 html, body, [class*="css"] {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: #0f172a;
+    -webkit-tap-highlight-color: transparent;
 }
 
-/* Light background */
+/* Light background & overflow safeguard */
 .stApp {
     background-color: #f8fafc;
+    overflow-x: hidden;
 }
 
-/* Main content width constraint for comfortable reading measure */
+/* Main container constraints */
 .main .block-container {
     max-width: 960px;
-    padding-top: 2.5rem;
+    padding-top: 2.25rem;
     padding-bottom: 4rem;
 }
 
@@ -61,18 +63,20 @@ html, body, [class*="css"] {
 }
 
 [data-testid="stSidebar"] .block-container {
-    padding-top: 2rem;
+    padding-top: 1.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
 }
 
-/* Sidebar Headings */
+/* Sidebar Section Titles */
 .sidebar-section-title {
     font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: #64748b;
-    margin-top: 1.5rem;
-    margin-bottom: 0.5rem;
+    margin-top: 1.25rem;
+    margin-bottom: 0.45rem;
 }
 
 /* Header typography */
@@ -88,7 +92,7 @@ html, body, [class*="css"] {
     font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.02em;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.65rem;
 }
 
 .header-title {
@@ -104,26 +108,25 @@ html, body, [class*="css"] {
     font-size: 0.98rem;
     color: #475569;
     line-height: 1.55;
-    margin-bottom: 2rem;
+    margin-bottom: 1.75rem;
     max-width: 680px;
 }
 
-/* Stat Cards Strip */
+/* Stat Cards Strip (Responsive CSS Grid) */
 .stats-strip {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: 0.75rem;
-    margin: 1.25rem 0 1.75rem 0;
-    flex-wrap: wrap;
+    margin: 1.25rem 0 1.5rem 0;
 }
 
 .stat-chip {
-    flex: 1;
-    min-width: 140px;
     background-color: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     padding: 0.85rem 1rem;
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+    min-width: 0;
 }
 
 .stat-label {
@@ -140,6 +143,8 @@ html, body, [class*="css"] {
     font-weight: 700;
     color: #0f172a;
     letter-spacing: -0.02em;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 /* Keywords list */
@@ -152,7 +157,8 @@ html, body, [class*="css"] {
     border-radius: 6px;
     font-size: 0.78rem;
     font-family: 'JetBrains Mono', monospace;
-    margin: 0.15rem;
+    margin: 0.2rem 0.15rem;
+    word-break: break-word;
 }
 
 /* Answer Card */
@@ -161,8 +167,10 @@ html, body, [class*="css"] {
     border: 1px solid #e2e8f0;
     border-radius: 14px;
     padding: 1.5rem;
-    margin: 1.5rem 0;
+    margin: 1.25rem 0;
     box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.04), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .answer-header {
@@ -172,6 +180,8 @@ html, body, [class*="css"] {
     margin-bottom: 0.85rem;
     padding-bottom: 0.65rem;
     border-bottom: 1px solid #f1f5f9;
+    gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .answer-title {
@@ -185,6 +195,8 @@ html, body, [class*="css"] {
     font-size: 0.95rem;
     line-height: 1.68;
     color: #1e293b;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 /* Retrieved Chunk Card */
@@ -195,6 +207,8 @@ html, body, [class*="css"] {
     padding: 1rem 1.15rem;
     margin-bottom: 0.75rem;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .chunk-card:hover {
@@ -207,6 +221,8 @@ html, body, [class*="css"] {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.35rem;
 }
 
 .chunk-number {
@@ -224,6 +240,7 @@ html, body, [class*="css"] {
     font-size: 0.75rem;
     font-weight: 600;
     font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
 }
 
 .score-high {
@@ -242,9 +259,11 @@ html, body, [class*="css"] {
     font-size: 0.88rem;
     color: #334155;
     line-height: 1.6;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
-/* Custom Primary Button */
+/* Primary Button & Inputs */
 div.stButton > button:first-child {
     background-color: #2563eb;
     color: #ffffff;
@@ -252,6 +271,7 @@ div.stButton > button:first-child {
     border-radius: 8px;
     border: none;
     padding: 0.55rem 1.4rem;
+    min-height: 44px;
     font-size: 0.92rem;
     letter-spacing: 0.01em;
     box-shadow: 0 1px 2px rgba(37, 99, 235, 0.15);
@@ -280,14 +300,15 @@ div.stButton > button:first-child:active {
     border-color: #94a3b8;
 }
 
-/* Inputs styling */
+/* Inputs styling (16px base prevents iOS auto-zoom on mobile!) */
 .stTextInput > div > div > input {
     border-radius: 8px;
     border: 1px solid #cbd5e1;
     background-color: #ffffff;
     color: #0f172a;
     padding: 0.6rem 0.85rem;
-    font-size: 0.93rem;
+    min-height: 44px;
+    font-size: 16px !important;
 }
 
 .stTextInput > div > div > input:focus {
@@ -300,6 +321,93 @@ div.stButton > button:first-child:active {
     font-weight: 600;
     color: #334155;
     background-color: #ffffff;
+}
+
+/* ========================================================================= */
+/* Mobile Responsiveness & Breakpoint Adjustments (Touch-friendly & Adaptive) */
+/* ========================================================================= */
+@media screen and (max-width: 768px) {
+    .main .block-container {
+        padding-top: 1.25rem !important;
+        padding-bottom: 2.5rem !important;
+        padding-left: 0.85rem !important;
+        padding-right: 0.85rem !important;
+    }
+
+    .header-title {
+        font-size: 1.65rem !important;
+        letter-spacing: -0.02em;
+    }
+
+    .header-subtitle {
+        font-size: 0.88rem !important;
+        line-height: 1.5;
+        margin-bottom: 1.25rem;
+    }
+
+    /* 2x2 Grid on Tablets & Phones */
+    .stats-strip {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.5rem !important;
+    }
+
+    .stat-chip {
+        padding: 0.75rem 0.85rem !important;
+        border-radius: 10px !important;
+    }
+
+    .stat-value {
+        font-size: 1.15rem !important;
+    }
+
+    .answer-box {
+        padding: 1.15rem !important;
+        margin: 1rem 0 !important;
+        border-radius: 12px !important;
+    }
+
+    .chunk-card {
+        padding: 0.85rem 0.95rem !important;
+    }
+
+    .chunk-header {
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+    }
+
+    div.stButton > button:first-child {
+        width: 100% !important;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .header-title {
+        font-size: 1.4rem !important;
+    }
+
+    .header-badge {
+        font-size: 0.7rem !important;
+        padding: 0.2rem 0.5rem !important;
+    }
+
+    .stat-label {
+        font-size: 0.68rem !important;
+    }
+
+    .stat-value {
+        font-size: 1.05rem !important;
+    }
+
+    .chunk-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.35rem !important;
+    }
+
+    .score-badge {
+        align-self: flex-start;
+    }
 }
 </style>
 """
@@ -464,27 +572,27 @@ if st.session_state.processed:
     vocab_size = len(st.session_state.vectorizer.get_feature_names_out())
     total_chunks = len(st.session_state.chunks)
 
-    # Impeccable Stat Strip
+    # Impeccable Responsive Stat Strip
     st.markdown(
         f"""
         <div class="stats-strip">
             <div class="stat-chip">
                 <div class="stat-label">Document</div>
-                <div class="stat-value" style="font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                <div class="stat-value" style="font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                     {st.session_state.file_name}
                 </div>
             </div>
             <div class="stat-chip">
-                <div class="stat-label">Total Passages</div>
+                <div class="stat-label">Passages</div>
                 <div class="stat-value">{total_chunks}</div>
             </div>
             <div class="stat-chip">
-                <div class="stat-label">Vocabulary Terms</div>
+                <div class="stat-label">Vocabulary</div>
                 <div class="stat-value">{vocab_size}</div>
             </div>
             <div class="stat-chip">
-                <div class="stat-label">Active Metric</div>
-                <div class="stat-value" style="font-size: 1rem; color: #2563eb;">Cosine Sim</div>
+                <div class="stat-label">Metric</div>
+                <div class="stat-value" style="color: #2563eb; font-size: 0.95rem;">Cosine Sim</div>
             </div>
         </div>
         """,
@@ -495,9 +603,9 @@ if st.session_state.processed:
         pills_html = "".join([f'<span class="keyword-pill">{t}</span>' for t in st.session_state.top_terms])
         st.markdown(pills_html, unsafe_allow_html=True)
 
-    st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
-    # Query Input
+    # Responsive Query Input Row
     query_col, btn_col = st.columns([5, 1])
     with query_col:
         query = st.text_input(
