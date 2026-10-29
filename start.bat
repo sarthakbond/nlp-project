@@ -13,8 +13,12 @@ echo [*] Checking Ollama local server status...
 netstat -ano | findstr 11434 >nul 2>&1
 if %errorlevel% neq 0 (
     echo [*] Ollama is not running. Starting Ollama in the background...
-    start "" /min "ollama" serve
-    timeout /t 3 /nobreak >nul
+    if exist "%LOCALAPPDATA%\Programs\Ollama\ollama.exe" (
+        start "" /min "%LOCALAPPDATA%\Programs\Ollama\ollama.exe" serve
+    ) else (
+        start "" /min "ollama" serve
+    )
+    timeout /t 4 /nobreak >nul
     echo [OK] Ollama started successfully.
 ) else (
     echo [OK] Ollama is already running on port 11434.
@@ -41,7 +45,6 @@ echo    Opening PDF QA Assistant at http://localhost:8501
 echo    Press Ctrl+C in this window to stop the server
 echo ================================================================
 echo.
-streamlit run app.py
+python -m streamlit run app.py
 
 pause
-
