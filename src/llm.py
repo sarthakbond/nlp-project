@@ -1,12 +1,55 @@
 import re
+import requests
+import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+
+OLLAMA_BASE_URL = "http://127.0.0.1:11434"
+
+
+def get_ollama_models(host=OLLAMA_BASE_URL):
+    """
+    Fetch all locally downloaded Ollama models from the local daemon.
+    """
+    try:
+        res = requests.get(f"{host}/api/tags", timeout=3)
+        if res.status_code == 200:
+            models = res.json().get("models", [])
+            return [m["name"] for m in models]
+    except Exception:
+        pass
+    return []
+
+
+class OllamaWrapper:
+    """
+    Local AI generation wrapper using Ollama REST API.
+    """
+    def __init__(self, model_name="llama3.1:latest", host=OLLAMA_BASE_URL):
+        self.model_name = model_name
+        self.host = host
+
+    def generate_content(self, prompt):
+        url = f"{self.host}/api/generate"
+        payload = {
+            "model": self.model_name,
+            "prompt": prompt,
+            "stream": False
+        }
+        res = requests.post(url, json=payload, timeout=120)
+        res.raise_for_status()
+        text = res.json().get("response", "")
+
+        class ResponseWrapper:
+            def __init__(self, text):
+                self.text = text
+
+        return ResponseWrapper(text)
 
 
 class GeminiWrapper:
     """
-    Wrapper around Google Generative AI that supports modern Gemini models
-    with automatic fallback (gemini-3.8-flash -> gemini-2.0-flash -> gemini-1.5-flash).
+    Google Generative AI wrapper supporting modern Gemini models with fallback.
     """
     def __init__(self, api_key):
         self.api_key = api_key.strip()
@@ -31,7 +74,6 @@ class GeminiWrapper:
             except Exception as e:
                 last_error = e
                 err_str = str(e).lower()
-                # If model is 404, deprecated, or unavailable, fallback to next model
                 if "404" in err_str or "not found" in err_str or "no longer available" in err_str:
                     continue
                 else:
@@ -40,31 +82,30 @@ class GeminiWrapper:
         raise last_error
 
 
-def load_model(api_key):
+def load_model(engine="Ollama", ollama_model="llama3.1:latest", api_key=""):
     """
-    Initializes the Gemini model wrapper if an API key is provided.
-    Returns None if api_key is missing or invalid.
+    Flexible loader for local Ollama, cloud Gemini, or Extractive QA.
     """
-    if not api_key or not api_key.strip():
-        return None
-
-    try:
-        return GeminiWrapper(api_key)
-    except Exception as e:
-        print(f"Warning: Failed to initialize Gemini model: {e}")
-        return None
+    if engine == "Ollama":
+        return OllamaWrapper(model_name=ollama_model)
+    elif engine == "Gemini" and api_key and api_key.strip():
+        try:
+            return GeminiWrapper(api_key=api_key)
+        except Exception as e:
+            print(f"Warning: Failed to initialize Gemini model: {e}")
+            return None
+    return None
 
 
 def extract_extractive_answer(question, context, top_sentences=2):
     """
     Topic #9: Extractive QA using TF-IDF sentence similarity.
     Extracts the most relevant sentences from the retrieved context
-    without needing an external LLM / API key.
+    without needing an LLM.
     """
     if not context or not context.strip():
         return "No relevant context found in document."
 
-    # Split context into sentences
     sentences = re.split(r"(?<=[.!?])\s+", context.strip())
     sentences = [s.strip() for s in sentences if len(s.strip()) > 15]
 
@@ -77,7 +118,6 @@ def extract_extractive_answer(question, context, top_sentences=2):
         query_vec = vec.transform([question])
         scores = cosine_similarity(query_vec, tfidf_sentences).flatten()
 
-        import numpy as np
         top_idx = np.argsort(scores)[::-1][:top_sentences]
         best_sentences = [sentences[i] for i in top_idx if scores[i] > 0]
 
@@ -91,19 +131,18 @@ def extract_extractive_answer(question, context, top_sentences=2):
 
 def generate_answer(model, question, context):
     """
-    Generates answer using Gemini LLM if available,
-    otherwise falls back gracefully to classical Extractive QA.
+    Generates answer using Ollama or Gemini if available,
+    otherwise falls back to classical Extractive QA.
     """
     if model is None:
         extractive = extract_extractive_answer(question, context)
         return (
             f"**[Extractive QA Result - Topic #9 Classical Retrieval]:**\n\n"
             f"> {extractive}\n\n"
-            f"*(Tip: Provide a `GEMINI_API_KEY` in the sidebar or `.env` file to generate a synthesized conversational response.)*"
+            f"*(Tip: Enable Ollama or enter a Gemini API Key in the sidebar for conversational synthesis.)*"
         )
 
-    prompt = f"""
-You are an intelligent document QA assistant. Use ONLY the retrieved context below to answer the user's question accurately.
+    prompt = f"""You are an intelligent document QA assistant. Use ONLY the retrieved context below to answer the user's question accurately.
 If the answer cannot be determined from the context, state: "The requested information is not found in the provided document."
 
 Retrieved Context:
@@ -112,15 +151,14 @@ Retrieved Context:
 Question:
 {question}
 
-Provide a clear, accurate, and concise answer based strictly on the context above:
-"""
+Provide a clear, accurate, and concise answer based strictly on the context above:"""
+
     try:
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
-        # Fallback to extractive answer if API fails (e.g., quota or network issue)
         fallback = extract_extractive_answer(question, context)
         return (
-            f"**[LLM API Error: {e}]**\n\n"
+            f"**[Model Generation Error: {e}]**\n\n"
             f"**Fallback Extractive Answer:**\n\n> {fallback}"
         )

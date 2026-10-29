@@ -16,7 +16,7 @@ from src.pdf_utils import extract_text
 from src.text_utils import clean_text, chunk_text
 from src.embeddings import create_tfidf_embeddings
 from src.rag import retrieve_tfidf
-from src.llm import load_model, generate_answer
+from src.llm import load_model, generate_answer, get_ollama_models
 
 # -----------------------------------------------------------------------------
 # Streamlit App Configuration
@@ -334,21 +334,47 @@ with st.sidebar:
         help="Number of most similar text chunks retrieved for evaluation."
     )
 
-    st.markdown('<div class="sidebar-section-title">SYNTHESIS ENGINE (OPTIONAL)</div>', unsafe_allow_html=True)
-    api_key_input = st.text_input(
-        "Gemini API Key",
-        value=default_api_key,
-        type="password",
-        placeholder="Paste API key or use local .env",
-        help="Used to synthesize answers. If left blank, the app performs classical Extractive QA directly from the PDF."
+    st.markdown('<div class="sidebar-section-title">LOCAL AI SYNTHESIS</div>', unsafe_allow_html=True)
+    
+    # Query local Ollama models
+    detected_ollama = get_ollama_models()
+    engine_options = ["Ollama (Local LLM)", "Extractive QA (Offline Classical)", "Google Gemini (Cloud)"]
+    
+    selected_engine = st.selectbox(
+        "Synthesis Engine",
+        options=engine_options,
+        index=0 if detected_ollama else 1,
+        label_visibility="collapsed"
     )
+
+    ollama_model_choice = "llama3.1:latest"
+    api_key_input = ""
+
+    if selected_engine == "Ollama (Local LLM)":
+        if detected_ollama:
+            ollama_model_choice = st.selectbox("Ollama Model", options=detected_ollama, index=0)
+            st.markdown(
+                f'<div style="color: #047857; font-size: 0.75rem; font-weight: 600; margin-top: 0.35rem;">'
+                f'● Ollama Connected ({ollama_model_choice})'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+        else:
+            st.warning("Ollama server not detected. Please ensure Ollama is running or use Extractive QA.")
+    elif selected_engine == "Google Gemini (Cloud)":
+        api_key_input = st.text_input(
+            "Gemini API Key",
+            value=default_api_key,
+            type="password",
+            placeholder="Paste Gemini API key",
+        )
 
     st.markdown("---")
     st.markdown(
         """
         <div style="font-size: 0.78rem; color: #64748b; line-height: 1.45;">
-            <b>Topic #9 Compliance Note:</b><br>
-            Classical TF-IDF and Cosine Similarity are executed locally on CPU without external API dependencies.
+            <b>Topic #9 Compliance:</b><br>
+            All document preprocessing, TF-IDF vectorization, and Cosine Similarities execute 100% locally.
         </div>
         """,
         unsafe_allow_html=True
@@ -377,7 +403,7 @@ st.markdown('<div class="header-badge">Topic #9 &middot; Classical NLP Question 
 st.markdown('<h1 class="header-title">PDF Document QA Assistant</h1>', unsafe_allow_html=True)
 st.markdown(
     '<p class="header-subtitle">Ingest complex PDF documents and retrieve precise answers using '
-    '<strong>TF-IDF vector space modeling</strong> and <strong>Cosine Similarity</strong>.</p>',
+    '<strong>TF-IDF vector space modeling</strong>, <strong>Cosine Similarity</strong>, and local <strong>Ollama synthesis</strong>.</p>',
     unsafe_allow_html=True
 )
 
@@ -496,7 +522,17 @@ if st.session_state.processed:
                     top_k=top_k
                 )
 
-                llm = load_model(api_key_input)
+                # Initialize LLM based on user selection
+                if selected_engine == "Ollama (Local LLM)":
+                    llm = load_model(engine="Ollama", ollama_model=ollama_model_choice)
+                    badge_label = f"Ollama &middot; {ollama_model_choice}"
+                elif selected_engine == "Google Gemini (Cloud)":
+                    llm = load_model(engine="Gemini", api_key=api_key_input)
+                    badge_label = "Gemini 3.8 Flash"
+                else:
+                    llm = None
+                    badge_label = "Extractive QA"
+
                 answer = generate_answer(llm, query, context)
 
             # Elegant Answer Presentation Card
@@ -505,7 +541,7 @@ if st.session_state.processed:
                 <div class="answer-box">
                     <div class="answer-header">
                         <div class="answer-title">Synthesized Response</div>
-                        <span class="header-badge" style="margin: 0;">{"Gemini 3.8 Flash" if llm is not None else "Extractive QA"}</span>
+                        <span class="header-badge" style="margin: 0;">{badge_label}</span>
                     </div>
                     <div class="answer-content">
                         {answer}
