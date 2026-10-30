@@ -1,9 +1,4 @@
-scikit-learn
-streamlit
-pypdf
-PyMuPDF
-numpy
-python-dotenv
-google-generativeai
-sentence-transformers
-faiss-cpu
+fastapi>=0.115.0
+pydantic>=2.10.0
+scikit-learn>=1.5.0
+numpy>=2.1.0
